@@ -1,13 +1,11 @@
-pragma solidity ^0.4.17;
+pragma solidity >=0.4.17;
 
 contract CampaignFactory {
     address[] public deployedCampaigns;
-    
     function createCampaign(uint minimum) public {
         address newCampaign = new Campaign(minimum, msg.sender);
         deployedCampaigns.push(newCampaign);
     }
-    
     function getDeployedCampaigns() public view returns (address[]) {
         return deployedCampaigns;
     }
@@ -22,13 +20,11 @@ contract Campaign {
         uint approvalCount;
         mapping(address => bool) approvals;
     }
-    
     Request[] public requests;
     address public manager;
     uint public minimumContribution;
     mapping(address => bool) public approvers;
     uint public approversCount = 0;
-    
     modifier restricted() {
         require(msg.sender == manager);
         _;
