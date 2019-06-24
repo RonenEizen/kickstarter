@@ -1,12 +1,13 @@
-pragma solidity ^0.4.17;
+pragma solidity >=0.4.22 <0.6.0;
 
 contract CampaignFactory {
-    address[] public deployedCampaigns;
+    Campaign[] public deployedCampaigns;
+
     function createCampaign(uint minimum) public {
-        address newCampaign = new Campaign(minimum, msg.sender);
+        Campaign newCampaign = new Campaign(minimum, msg.sender);
         deployedCampaigns.push(newCampaign);
     }
-    function getDeployedCampaigns() public view returns (address[]) {
+    function getDeployedCampaigns() public view returns (Campaign[] memory) {
         return deployedCampaigns;
     }
 }
@@ -24,25 +25,30 @@ contract Campaign {
     address public manager;
     uint public minimumContribution;
     mapping(address => bool) public approvers;
-    uint public approversCount = 0;
+    uint public approversCount;
     modifier restricted() {
-        require(msg.sender == manager);
+        require(
+            msg.sender == manager,
+            "This action can be done by the manager only"
+        );
         _;
     }
     
-    function Campaign(uint minimum, address creator) public {
+    constructor(uint minimum, address creator) public {
         manager = creator;
         minimumContribution = minimum;
     }
     
     function contribute() public payable {
-        require(msg.value > minimumContribution);
-        
+        require(
+            msg.value > minimumContribution,
+            "Minimum contribution is required"
+        );
         approvers[msg.sender] = true;
         approversCount++;
     }
     
-    function createRequest(string description, uint value, address recipient) public restricted {
+    function createRequest(string memory description, uint value, address recipient) public restricted {
         Request memory newRequest = Request({
             description: description,
             value: value,
@@ -50,26 +56,33 @@ contract Campaign {
             complete: false,
             approvalCount: 0
         });
-        
         requests.push(newRequest);
     }
     
     function approveRequest(uint index) public {
         Request storage request = requests[index];
-        
-        require(approvers[msg.sender]);
-        require(!request.approvals[msg.sender]);
-        
+        require(
+            approvers[msg.sender],
+            "Has to be a contributer to approve."
+        );
+        require(
+            !request.approvals[msg.sender],
+            "Can't approve more that once."
+        );
         request.approvals[msg.sender] = true;
         request.approvalCount++;
     }
     
     function finalizeRequest(uint index) public restricted {
         Request storage request = requests[index];
-        
-        require(request.approvalCount > (approversCount/2));
-        require(!request.complete);
-        
+        require(
+            request.approvalCount > (approversCount/2),
+            "Request has to be approved by half of contributors"
+        );
+        require(
+            !request.complete,
+            "This request has already been complete"
+        );
         request.complete = true;
     }
 }
